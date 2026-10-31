@@ -1,7 +1,7 @@
 class KnowledgeApp {
   constructor() {
     this.dbName = 'KnowledgeEncyclopediaDB';
-    this.dbVersion = 1;
+    this.dbVersion = 2;
     this.db = null;
     this.currentView = 'home';
     this.userStats = JSON.parse(localStorage.getItem('kb_stats')) || { attempted: 0, correct: 0, bookmarks: [] };
@@ -73,6 +73,14 @@ class KnowledgeApp {
     });
   }
 
+  resetStats() {
+    if (confirm('هل أنت متأكد من رغبتك في تصفير العدادات والبدء من الصفر؟')) {
+      this.userStats = { attempted: 0, correct: 0, bookmarks: [] };
+      localStorage.setItem('kb_stats', JSON.stringify(this.userStats));
+      this.renderView('home');
+    }
+  }
+
   navigate(viewName, params = {}) {
     this.currentView = viewName;
     this.renderView(viewName, params);
@@ -88,47 +96,52 @@ class KnowledgeApp {
         container.innerHTML = `
           <div class="space-y-6">
             <div class="glass p-6 rounded-3xl relative overflow-hidden bg-gradient-to-br from-indigo-900/50 to-slate-900/80 border-indigo-500/20 shadow-xl">
-              <h2 class="text-2xl font-black mb-1">مرحباً بك في موسوعة المعرفة</h2>
-              <p class="text-slate-400 text-sm mb-4">بوابتك الشاملة لمليون سؤال بدون إنترنت</p>
+              <div class="flex justify-between items-start mb-2">
+                <h2 class="text-2xl font-black">موسوعة المعرفة</h2>
+                <button onclick="app.resetStats()" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 text-xs px-3 py-1.5 rounded-xl border border-rose-500/30 transition flex items-center gap-1.5" title="إعادة تعيين العدادات">
+                  <i class="fa-solid fa-rotate-right"></i> تصفير الإحصائيات
+                </button>
+              </div>
+              <p class="text-slate-400 text-sm mb-4">بوابتك الشاملة لمليون سؤال بدون إنترنت لخدمة المجتمع</p>
               <div class="grid grid-cols-2 gap-3 text-center">
                 <div class="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/50">
                   <span class="block text-2xl font-bold text-indigo-400">${totalQ.toLocaleString('ar-EG')}</span>
                   <span class="text-xs text-slate-400">إجمالي الأسئلة</span>
                 </div>
                 <div class="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/50">
-                  <span class="block text-2xl font-bold text-emerald-400">${this.userStats.correct}</span>
-                  <span class="text-xs text-slate-400">إجابات صحيحة</span>
+                  <span class="block text-2xl font-bold text-emerald-400">${this.userStats.correct} / ${this.userStats.attempted}</span>
+                  <span class="text-xs text-slate-400">الصحيحة / المحاولات</span>
                 </div>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <button onclick="app.startQuiz('learning')" class="glass p-4 rounded-2xl text-right hover:border-indigo-500 transition">
+              <button onclick="app.startQuizSetup('learning')" class="glass p-4 rounded-2xl text-right hover:border-indigo-500 transition">
                 <div class="bg-indigo-600/20 text-indigo-400 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
                   <i class="fa-solid fa-book-open text-lg"></i>
                 </div>
                 <h3 class="font-bold text-sm">نظام التعلم</h3>
                 <p class="text-xs text-slate-400">تصفح الإجابات والشرح الفوري</p>
               </button>
-              <button onclick="app.startQuiz('exam')" class="glass p-4 rounded-2xl text-right hover:border-indigo-500 transition">
+              <button onclick="app.startQuizSetup('exam')" class="glass p-4 rounded-2xl text-right hover:border-indigo-500 transition">
                 <div class="bg-purple-600/20 text-purple-400 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
                   <i class="fa-solid fa-clock text-lg"></i>
                 </div>
                 <h3 class="font-bold text-sm">نظام الاختبار</h3>
-                <p class="text-xs text-slate-400">اختبر معلوماتك وتخطى الأسئلة</p>
+                <p class="text-xs text-slate-400">حدد عدد الأسئلة واختبر نفسك</p>
               </button>
-              <button onclick="app.startQuiz('genius')" class="glass p-4 rounded-2xl text-right hover:border-amber-500 transition">
+              <button onclick="app.startQuizSetup('genius')" class="glass p-4 rounded-2xl text-right hover:border-amber-500 transition">
                 <div class="bg-amber-600/20 text-amber-400 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
                   <i class="fa-solid fa-brain text-lg"></i>
                 </div>
                 <h3 class="font-bold text-sm">تحدي العباقرة</h3>
-                <p class="text-xs text-slate-400">أسئلة صعبة ومتقدمة</p>
+                <p class="text-xs text-slate-400">أسئلة صعبة ومتقدمة بعدد تختاره</p>
               </button>
               <button onclick="app.navigate('categories')" class="glass p-4 rounded-2xl text-right hover:border-emerald-500 transition">
                 <div class="bg-emerald-600/20 text-emerald-400 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
                   <i class="fa-solid fa-layer-group text-lg"></i>
                 </div>
-                <h3 class="font-bold text-sm">حسب المجال</h3>
-                <p class="text-xs text-slate-400">اختر مجالاً تخصصياً</p>
+                <h3 class="font-bold text-sm">حسب التخصص</h3>
+                <p class="text-xs text-slate-400">تصفح الأقسام والأسئلة</p>
               </button>
             </div>
           </div>
@@ -136,17 +149,29 @@ class KnowledgeApp {
         break;
 
       case 'categories':
-        const categories = ["الجغرافيا والدول", "التاريخ والحضارات", "العلوم العامة والفيزياء", "هندسة المساحة والجيوماتكس", "الذكاء الاصطناعي وعلوم الحاسب"];
+        const categories = [
+          "الجغرافيا والدول", "التاريخ والحضارات", "العلوم العامة والفيزياء", 
+          "هندسة المساحة والجيوماتكس", "الذكاء الاصطناعي وعلوم الحاسب", 
+          "الفلك والفضاء", "التاريخ المصري القديم", "الرياضيات والهندسة التحليلية",
+          "الأحياء والطب البشري", "الاقتصاد والأعمال"
+        ];
+        
+        let catHtml = '';
+        for (let cat of categories) {
+          const qList = await this.getQuestionsByCategory(cat);
+          catHtml += `
+            <div onclick="app.startCategoryQuiz('${cat}')" class="glass p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:border-indigo-500 transition">
+              <span class="font-semibold text-sm">${cat}</span>
+              <span class="text-xs bg-indigo-600/20 text-indigo-300 px-2.5 py-1 rounded-xl">(${qList.length} سؤال)</span>
+            </div>
+          `;
+        }
+
         container.innerHTML = `
           <div class="space-y-4">
-            <h2 class="text-xl font-bold">المجالات المعرفية</h2>
+            <h2 class="text-xl font-bold">التخصصات المعرفية</h2>
             <div class="grid grid-cols-1 gap-2.5">
-              ${categories.map(cat => `
-                <div onclick="app.startCategoryQuiz('${cat}')" class="glass p-4 rounded-2xl flex justify-between items-center cursor-pointer hover:border-indigo-500 transition">
-                  <span class="font-semibold text-sm">${cat}</span>
-                  <i class="fa-solid fa-chevron-left text-slate-500 text-sm"></i>
-                </div>
-              `).join('')}
+              ${catHtml}
             </div>
           </div>
         `;
@@ -157,24 +182,7 @@ class KnowledgeApp {
           <div class="space-y-4">
             <h2 class="text-xl font-bold">بحث متقدم</h2>
             <input type="text" oninput="app.performSearch(this.value)" placeholder="ابحث عن سؤال أو معلومة..." class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm focus:outline-none focus:border-indigo-500">
-            <div id="search-results" class="space-y-3"><p class="text-center text-slate-500 text-sm py-10">اكتب حرفين للبحث...</p></div>
-          </div>
-        `;
-        break;
-
-      case 'stats':
-        const successRate = this.userStats.attempted > 0 ? Math.round((this.userStats.correct / this.userStats.attempted) * 100) : 0;
-        container.innerHTML = `
-          <div class="space-y-6 text-center">
-            <h2 class="text-xl font-bold">الإحصائيات والتقدم</h2>
-            <div class="glass p-6 rounded-3xl space-y-3">
-              <div class="text-4xl font-black text-indigo-400">${successRate}%</div>
-              <p class="text-xs text-slate-400">نسبة الإجابات الصحيحة</p>
-              <div class="grid grid-cols-2 gap-2 mt-4 text-sm">
-                <div class="bg-slate-800/80 p-3 rounded-xl">المحاولات: <b>${this.userStats.attempted}</b></div>
-                <div class="bg-slate-800/80 p-3 rounded-xl">الصحيحة: <b>${this.userStats.correct}</b></div>
-              </div>
-            </div>
+            <div id="search-results" class="space-y-3"><p class="text-center text-slate-500 text-sm py-10">اكتب للبحث...</p></div>
           </div>
         `;
         break;
@@ -194,19 +202,40 @@ class KnowledgeApp {
     }
   }
 
-  async startQuiz(mode) {
+  async startQuizSetup(mode) {
     let questions = await this.getAllQuestions();
     if (mode === 'genius') {
       questions = questions.filter(q => q.difficulty === 'صعب' || q.difficulty === 'عباقرة');
       if (questions.length === 0) questions = await this.getAllQuestions();
     }
-    if (questions.length === 0) { alert('لا توجد أسئلة متاحة حالياً.'); return; }
-    this.runQuizSession(questions);
+    if (questions.length === 0) { alert('لا توجد أسئلة متاحة.'); return; }
+
+    const container = document.getElementById('app-view');
+    container.innerHTML = `
+      <div class="glass p-6 rounded-3xl space-y-6 text-center my-auto">
+        <h2 class="text-xl font-bold">إعدادات الاختبار (${mode === 'learning' ? 'نظام التعلم' : mode === 'exam' ? 'نظام الاختبار' : 'تحدي العباقرة'})</h2>
+        <p class="text-xs text-slate-400">إجمالي الأسئلة المتاحة في هذا القسم: <span class="text-indigo-400 font-bold">${questions.length}</span></p>
+        <div class="space-y-2 text-right">
+          <label class="text-xs font-semibold text-slate-300">حدد عدد الأسئلة التي تريد الإجابة عليها:</label>
+          <input type="number" id="quiz-count-input" value="${Math.min(10, questions.length)}" min="1" max="${questions.length}" class="w-full bg-slate-800 border border-slate-700 rounded-2xl py-3 px-4 text-sm text-center focus:outline-none focus:border-indigo-500 font-bold">
+        </div>
+        <button onclick="app.launchQuizSession('${mode}')" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3.5 rounded-2xl font-bold transition shadow-lg">ابدأ الآن</button>
+        <button onclick="app.navigate('home')" class="w-full bg-slate-800 hover:bg-slate-700 py-3 rounded-2xl font-bold text-xs text-slate-400 transition">إلغاء والعودة</button>
+      </div>
+    `;
+    this.setupQuestionsCache = questions;
+  }
+
+  async launchQuizSession(mode) {
+    const countInput = document.getElementById('quiz-count-input');
+    let limit = parseInt(countInput.value) || 5;
+    let selectedQuestions = [...this.setupQuestionsCache].sort(() => 0.5 - Math.random()).slice(0, limit);
+    this.runQuizSession(selectedQuestions);
   }
 
   async startCategoryQuiz(category) {
     let questions = await this.getQuestionsByCategory(category);
-    if (questions.length === 0) { alert('لا توجد أسئلة في هذا المجال.'); return; }
+    if (questions.length === 0) { alert('لا توجد أسئلة في هذا التخصص.'); return; }
     this.runQuizSession(questions);
   }
 
@@ -241,6 +270,7 @@ class KnowledgeApp {
           <div class="glass p-6 rounded-3xl text-center space-y-4 my-auto">
             <div class="text-emerald-400 text-5xl mb-2"><i class="fa-solid fa-circle-check"></i></div>
             <h2 class="text-xl font-bold">أنهيت الأسئلة بنجاح!</h2>
+            <p class="text-xs text-slate-400">تم حفظ نتيجتك وإحصائياتك بنجاح.</p>
             <button onclick="app.navigate('home')" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl font-bold transition">العودة للرئيسية</button>
           </div>
         `;
@@ -314,7 +344,6 @@ class KnowledgeApp {
         </div>
       `;
     } else {
-      // إعادة رسم السؤال التالي مباشرة
       const q = this.currentQuestions[this.currentIndex];
       const container = document.getElementById('app-view');
       container.innerHTML = `
