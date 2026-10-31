@@ -5,7 +5,6 @@ class KnowledgeApp {
     this.db = null;
     this.currentView = 'home';
     this.userStats = JSON.parse(localStorage.getItem('kb_stats')) || { attempted: 0, correct: 0, bookmarks: [] };
-    this.isDarkMode = true;
     this.init();
   }
 
@@ -115,7 +114,7 @@ class KnowledgeApp {
                   <i class="fa-solid fa-clock text-lg"></i>
                 </div>
                 <h3 class="font-bold text-sm">نظام الاختبار</h3>
-                <p class="text-xs text-slate-400">اختبر معلوماتك بنتيجة نهائية</p>
+                <p class="text-xs text-slate-400">اختبر معلوماتك وتخطى الأسئلة</p>
               </button>
               <button onclick="app.startQuiz('genius')" class="glass p-4 rounded-2xl text-right hover:border-amber-500 transition">
                 <div class="bg-amber-600/20 text-amber-400 w-10 h-10 rounded-xl flex items-center justify-center mb-3">
@@ -180,26 +179,6 @@ class KnowledgeApp {
         `;
         break;
 
-      case 'bookmarks':
-        const allQ = await this.getAllQuestions();
-        const bookmarkedQ = allQ.filter(q => this.userStats.bookmarks.includes(q.id));
-        container.innerHTML = `
-          <div class="space-y-4">
-            <h2 class="text-xl font-bold">المفضلة (${bookmarkedQ.length})</h2>${bookmarkedQ.length === 0 ? '<p class="text-center text-slate-500 text-sm py-10">لا توجد أسئلة مفضلة حالياً.</p>' : 
-              bookmarkedQ.map(q => `
-                <div class="glass p-4 rounded-2xl space-y-2">
-                  <div class="flex justify-between items-center">
-                    <span class="text-[10px] bg-indigo-600/20 text-indigo-400 px-2 py-0.5 rounded">${q.category}</span>
-                    <button onclick="app.toggleBookmark('${q.id}')" class="text-amber-400"><i class="fa-solid fa-star"></i></button>
-                  </div>
-                  <h4 class="font-bold text-sm">${q.question}</h4>
-                  <p class="text-xs text-emerald-400">الإجابة: ${q.answer}</p>
-                </div>
-              `).join('')}
-          </div>
-        `;
-        break;
-
       case 'dashboard':
         container.innerHTML = `
           <div class="space-y-4">
@@ -222,13 +201,13 @@ class KnowledgeApp {
       if (questions.length === 0) questions = await this.getAllQuestions();
     }
     if (questions.length === 0) { alert('لا توجد أسئلة متاحة حالياً.'); return; }
-    this.runQuizSession(questions, mode);
+    this.runQuizSession(questions);
   }
 
   async startCategoryQuiz(category) {
-    const questions = await this.getQuestionsByCategory(category);
+    let questions = await this.getQuestionsByCategory(category);
     if (questions.length === 0) { alert('لا توجد أسئلة في هذا المجال.'); return; }
-    this.runQuizSession(questions, 'learning');
+    this.runQuizSession(questions);
   }
 
   getAllQuestions() {
@@ -252,7 +231,7 @@ class KnowledgeApp {
     });
   }
 
-  runQuizSession(questions, mode) {
+  runQuizSession(questions) {
     let currentIndex = 0;
     const container = document.getElementById('app-view');
 
@@ -261,33 +240,144 @@ class KnowledgeApp {
         container.innerHTML = `
           <div class="glass p-6 rounded-3xl text-center space-y-4 my-auto">
             <div class="text-emerald-400 text-5xl mb-2"><i class="fa-solid fa-circle-check"></i></div>
-            <h2 class="text-xl font-bold">أنهيت الاختبار بنجاح!</h2>
+            <h2 class="text-xl font-bold">أنهيت الأسئلة بنجاح!</h2>
             <button onclick="app.navigate('home')" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl font-bold transition">العودة للرئيسية</button>
           </div>
         `;
         return;
       }
-      const q = questions[currentIndex];
-      const isBookmarked = this.userStats.bookmarks.includes(q.id);
 
+      const q = questions[currentIndex];
       container.innerHTML = `
         <div class="space-y-4">
           <div class="flex justify-between items-center text-xs text-slate-400">
             <span>السؤال ${currentIndex + 1} من ${questions.length}</span>
-            <div class="flex items-center gap-2">
-              <span class="bg-indigo-600/20 text-indigo-400 px-2.5 py-1 rounded-lg">${q.category}</span>
-              <button onclick="app.toggleBookmark('${q.id}')" class="text-lg ${isBookmarked ? 'text-amber-400' : 'text-slate-500'}">
-                <i class="fa-${isBookmarked ? 'solid' : 'regular'} fa-star"></i>
-              </button>
-            </div>
+            <span class="bg-indigo-600/20 text-indigo-400 px-2.5 py-1 rounded-lg">${q.category}</span>
           </div>
           <div class="glass p-6 rounded-3xl space-y-4">
             <h3 class="font-bold text-base leading-relaxed">${q.question}</h3>
             <div class="space-y-2.5" id="options-container">
               ${q.options.map((opt) => `
-                <button onclick="app.handleAnswerClick(this, '${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}', ${mode === 'learning'})" class="w-full text-right p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-sm transition font-medium">
+                <button onclick="app.handleAnswerClick(this, '${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')" class="w-full text-right p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-sm transition font-medium">
                   ${opt}
                 </button>
               `).join('')}
             </div>
-            <div id="explanation-box" class="hidden mt-4 p-4 rounded-2xl bg
+            <div id="explanation-box" class="hidden mt-4 p-4 rounded-2xl bg-slate-800/90 border border-slate-700 text-xs space-y-2">
+              <p class="font-bold text-indigo-400"><i class="fa-solid fa-circle-info ml-1"></i> الشرح والتوضيح:</p>
+              <p class="text-slate-300">${q.explanation}</p>
+              <p class="font-bold text-emerald-400 mt-2"><i class="fa-solid fa-lightbulb ml-1"></i> معلومة إضافية:</p>
+              <p class="text-slate-300">${q.extraInfo}</p>
+            </div>
+          </div>
+          <button onclick="app.nextQuestion('${questions.length}')" id="next-btn" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 py-3.5 rounded-2xl font-bold transition shadow-lg shadow-indigo-600/30">السؤال التالي</button>
+        </div>
+      `;
+      this.currentQuestions = questions;
+      this.currentIndex = currentIndex;
+    };
+
+    renderQuestion();
+  }
+
+  handleAnswerClick(btnElement, selected, correct) {
+    const container = document.getElementById('options-container');
+    container.querySelectorAll('button').forEach(b => b.disabled = true);
+    
+    this.userStats.attempted++;
+    if (selected.trim() === correct.trim()) {
+      btnElement.classList.add('bg-emerald-600/30', 'border-emerald-500', 'text-emerald-300');
+      this.userStats.correct++;
+    } else {
+      btnElement.classList.add('bg-rose-600/30', 'border-rose-500', 'text-rose-300');
+      container.querySelectorAll('button').forEach(b => {
+        if (b.textContent.trim() === correct.trim()) {
+          b.classList.add('bg-emerald-600/30', 'border-emerald-500', 'text-emerald-300');
+        }
+      });
+    }
+    localStorage.setItem('kb_stats', JSON.stringify(this.userStats));
+
+    document.getElementById('explanation-box').classList.remove('hidden');
+    document.getElementById('next-btn').classList.remove('hidden');
+  }
+
+  nextQuestion(totalLength) {
+    this.currentIndex++;
+    if (this.currentIndex >= totalLength) {
+      const container = document.getElementById('app-view');
+      container.innerHTML = `
+        <div class="glass p-6 rounded-3xl text-center space-y-4 my-auto">
+          <div class="text-emerald-400 text-5xl mb-2"><i class="fa-solid fa-circle-check"></i></div>
+          <h2 class="text-xl font-bold">أنهيت الاختبار بنجاح!</h2>
+          <button onclick="app.navigate('home')" class="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-2xl font-bold transition">العودة للرئيسية</button>
+        </div>
+      `;
+    } else {
+      // إعادة رسم السؤال التالي مباشرة
+      const q = this.currentQuestions[this.currentIndex];
+      const container = document.getElementById('app-view');
+      container.innerHTML = `
+        <div class="space-y-4">
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <span>السؤال ${this.currentIndex + 1} من ${totalLength}</span>
+            <span class="bg-indigo-600/20 text-indigo-400 px-2.5 py-1 rounded-lg">${q.category}</span>
+          </div>
+          <div class="glass p-6 rounded-3xl space-y-4">
+            <h3 class="font-bold text-base leading-relaxed">${q.question}</h3>
+            <div class="space-y-2.5" id="options-container">
+              ${q.options.map((opt) => `
+                <button onclick="app.handleAnswerClick(this, '${opt.replace(/'/g, "\\'")}', '${q.answer.replace(/'/g, "\\'")}')" class="w-full text-right p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 text-sm transition font-medium">
+                  ${opt}
+                </button>
+              `).join('')}
+            </div>
+            <div id="explanation-box" class="hidden mt-4 p-4 rounded-2xl bg-slate-800/90 border border-slate-700 text-xs space-y-2">
+              <p class="font-bold text-indigo-400"><i class="fa-solid fa-circle-info ml-1"></i> الشرح والتوضيح:</p>
+              <p class="text-slate-300">${q.explanation}</p>
+              <p class="font-bold text-emerald-400 mt-2"><i class="fa-solid fa-lightbulb ml-1"></i> معلومة إضافية:</p>
+              <p class="text-slate-300">${q.extraInfo}</p>
+            </div>
+          </div>
+          <button onclick="app.nextQuestion('${totalLength}')" id="next-btn" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 py-3.5 rounded-2xl font-bold transition shadow-lg shadow-indigo-600/30">السؤال التالي</button>
+        </div>
+      `;
+    }
+  }
+
+  async performSearch(query) {
+    const resContainer = document.getElementById('search-results');
+    if (!query || query.trim().length < 2) { 
+      resContainer.innerHTML = '<p class="text-center text-slate-500 text-sm py-10">اكتب حرفين على الأقل للبحث...</p>'; 
+      return; 
+    }
+    const all = await this.getAllQuestions();
+    const filtered = all.filter(q => q.question.includes(query) || q.explanation.includes(query));
+    resContainer.innerHTML = filtered.length === 0 ? '<p class="text-center text-slate-500 text-sm py-10">لا توجد نتائج مطابقة.</p>' : filtered.map(q => `
+      <div class="glass p-4 rounded-2xl space-y-2">
+        <span class="text-[10px] bg-indigo-600/20 text-indigo-400 px-2 py-0.5 rounded">${q.category}</span>
+        <h4 class="font-bold text-sm">${q.question}</h4>
+        <p class="text-xs text-slate-400">الإجابة الصحيحة: <span class="text-emerald-400 font-bold">${q.answer}</span></p>
+      </div>
+    `).join('');
+  }
+
+  openDashboard() { this.navigate('dashboard'); }
+
+  handleImportFile() {
+    const fileInput = document.getElementById('json-file-input');
+    if (!fileInput.files.length) { alert('اختر ملف JSON أولاً.'); return; }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        await this.importQuestions(data);
+        alert('تم حفظ الأسئلة بنجاح!');
+        this.navigate('home');
+      } catch (err) { alert('خطأ في صيغة JSON.'); }
+    };
+    reader.readAsText(fileInput.files[0]);
+  }
+}
+
+const app = new KnowledgeApp();
